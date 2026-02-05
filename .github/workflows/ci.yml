@@ -1,0 +1,43 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and run tests
+        id: test
+        run: |
+          docker compose up --build --exit-code-from tests
+        continue-on-error: true
+
+      - name: Create result artifact
+        run: |
+          mkdir -p results
+          if [ "${{ steps.test.outcome }}" == "success" ]; then
+            touch results/succeeded
+            echo "Tests passed!"
+          else
+            touch results/fail
+            echo "Tests failed!"
+          fi
+
+      - name: Upload result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result
+          path: results/
+
+      - name: Fail job if tests failed
+        if: steps.test.outcome != 'success'
+        run: exit 1
