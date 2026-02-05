@@ -1,0 +1,22 @@
+services:
+  nginx:
+    build: ./nginx
+    container_name: nginx-server
+    ports:
+      - "8443:8443"
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-kf", "https://localhost:8443"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+
+  tests:
+    build: ./tests
+    container_name: nginx-tests
+    depends_on:
+      nginx:
+        condition: service_healthy
+    environment:
+      - NGINX_HOST=nginx
